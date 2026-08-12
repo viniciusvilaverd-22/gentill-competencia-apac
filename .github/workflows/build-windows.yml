@@ -1,0 +1,112 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'launcher/**'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Publish portable Windows x64
+        shell: pwsh
+        run: |
+          dotnet publish launcher/GentillCompetenciaAPAC.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -p:PublishSingleFile=true `
+            -p:IncludeNativeLibrariesForSelfExtract=true `
+            -p:PublishTrimmed=false `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o publish
+
+      - name: Self-test embedded v2.4.0 application
+        shell: pwsh
+        run: |
+          $exe = Join-Path $PWD 'publish/Gentill_Competencia_APAC_v2.4.0.exe'
+          if (!(Test-Path $exe)) { throw "Executável não foi gerado: $exe" }
+          $p = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "Self-test falhou com código $($p.ExitCode)" }
+
+      - name: Prepare release package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release | Out-Null
+          Copy-Item publish/Gentill_Competencia_APAC_v2.4.0.exe release/
+          $hash = (Get-FileHash release/Gentill_Competencia_APAC_v2.4.0.exe -Algorithm SHA256).Hash.ToLower()
+          "SHA-256  Gentill_Competencia_APAC_v2.4.0.exe`r`n$hash" | Set-Content release/SHA256.txt -Encoding utf8
+          @"
+          Gentill Competência APAC v2.4.0 — Validador OCI/PMAE
+
+          Executável portátil para Windows x64.
+          Não requer instalação do .NET.
+
+          A aplicação incorpora os arquivos atuais de src/ dentro do próprio executável.
+          Ao iniciar, abre a interface em modo aplicativo do Microsoft Edge quando disponível.
+
+          Segurança:
+          - validação OCI/PMAE e prevenção do cenário 010082;
+          - datas assistenciais não são reescritas;
+          - conversão limitada aos campos estruturais de competência homologados;
+          - arquivo misto é bloqueado;
+          - operação local/offline.
+
+          Ferramenta independente — não oficial DATASUS/MV.
+          by Gentill Mob Ops · www.gentillops.com.br
+          "@ | Set-Content release/LEIA-ME.txt -Encoding utf8
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gentill_Competencia_APAC_v2.4.0_Windows_x64
+          path: release/*
+          if-no-files-found: error
+
+      - name: Publish GitHub Release v2.4.0
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $notes = @"
+          ## Gentill Competência APAC v2.4.0 — Validador OCI/PMAE
+
+          Executável portátil para Windows x64.
+
+          ### Destaques
+          - diagnóstico automático da competência por encerramento;
+          - recomendação da competência compatível;
+          - bloqueio de divergências com risco de crítica 010082;
+          - bloqueio de arquivos com competências mistas;
+          - datas assistenciais permanecem intactas;
+          - suporte aos perfis APAC Magnético 3.12c e 4.00;
+          - auditoria e preservação binária fora dos campos de competência.
+
+          **Ferramenta independente — não oficial DATASUS/MV.**
+
+          by Gentill Mob Ops · www.gentillops.com.br
+          "@
+
+          if (gh release view v2.4.0 2>$null) {
+            gh release upload v2.4.0 release/Gentill_Competencia_APAC_v2.4.0.exe release/SHA256.txt release/LEIA-ME.txt --clobber
+          } else {
+            gh release create v2.4.0 release/Gentill_Competencia_APAC_v2.4.0.exe release/SHA256.txt release/LEIA-ME.txt --target "${{ github.sha }}" --title "Gentill Competência APAC v2.4.0" --notes $notes
+          }
