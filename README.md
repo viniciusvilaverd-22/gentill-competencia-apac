@@ -1,6 +1,6 @@
 # Gentill Competência APAC
 
-Utilitário desktop para Windows desenvolvido para auxiliar na **validação e alteração controlada da competência de arquivos APOCI utilizados em fluxos do APAC Magnético**.
+Utilitário desktop/web local para Windows desenvolvido para auxiliar na **validação e alteração controlada da competência de arquivos APOCI utilizados em fluxos do APAC Magnético**.
 
 > **Ferramenta independente — não oficial DATASUS/MV.**
 
@@ -29,7 +29,19 @@ O sistema identifica os campos de competência conhecidos na estrutura do arquiv
 - geração de relatório de auditoria;
 - verificação de integridade por SHA-256;
 - operação local e offline;
-- versão portátil para Windows x64.
+- interface Desktop técnico profissional.
+
+## Código-fonte
+
+A versão pública está organizada em três arquivos simples e auditáveis:
+
+- `src/index.html` — interface e estrutura da aplicação;
+- `src/styles.css` — identidade visual Desktop técnico;
+- `src/app.js` — validação, conversão, compatibilidade e auditoria.
+
+Para inspecionar a aplicação localmente, clone o repositório e abra `src/index.html` em um navegador compatível.
+
+O repositório **não contém arquivos reais de pacientes** e não deve receber esse tipo de dado em commits, issues ou pull requests.
 
 ## Segurança da conversão
 
@@ -69,12 +81,17 @@ O sistema verifica também a identificação da versão existente no cabeçalho 
 
 ```text
 .
-├── .gitignore      # Proteção contra build, segredos e dados APAC reais
-├── CHANGELOG.md    # Histórico das versões
-├── LICENSE         # Apache License 2.0
-├── NOTICE          # Autoria, independência e marcas de terceiros
-├── README.md       # Documentação principal
-└── SECURITY.md     # Política de segurança e proteção de dados
+├── src/
+│   ├── app.js          # Motor de validação/conversão
+│   ├── index.html      # Interface principal
+│   └── styles.css      # Estilos Desktop técnico
+├── .gitignore          # Proteção contra build, segredos e dados APAC reais
+├── CHANGELOG.md        # Histórico das versões
+├── CONTRIBUTING.md     # Regras para contribuições públicas
+├── LICENSE             # Apache License 2.0
+├── NOTICE              # Autoria, independência e marcas de terceiros
+├── README.md           # Documentação principal
+└── SECURITY.md         # Política de segurança e proteção de dados
 ```
 
 Binários (`.exe`) e pacotes (`.zip`) não devem ser versionados diretamente no código-fonte. A distribuição de versões compiladas deve ser feita preferencialmente por **GitHub Releases**.
@@ -115,6 +132,10 @@ Antes de utilizar arquivos gerados em ambiente produtivo, valide-os no processo 
 Consulte [`SECURITY.md`](SECURITY.md) antes de relatar vulnerabilidades ou compartilhar arquivos de teste.
 
 Nunca publique dados reais de pacientes em issues ou pull requests.
+
+## Contribuições
+
+Consulte [`CONTRIBUTING.md`](CONTRIBUTING.md). Contribuições são bem-vindas, desde que utilizem apenas dados fictícios/anonimizados e preservem as proteções de integridade do conversor.
 
 ## Licença
 
