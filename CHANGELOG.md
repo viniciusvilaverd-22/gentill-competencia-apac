@@ -4,6 +4,25 @@ Todas as alterações relevantes deste projeto serão registradas neste arquivo.
 
 O formato segue a ideia do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e o versionamento utiliza versões explícitas do aplicativo.
 
+## [2.4.1] - 2026-08-12
+
+### Corrigido
+
+- removida a seleção automática de competência baseada nas datas de encerramento;
+- a competência realmente gravada no arquivo agora permanece como origem ao carregar;
+- o mês/ano de destino é sempre escolhido manualmente pelo operador;
+- as datas de encerramento são exibidas somente como diagnóstico de leitura;
+- removida a lógica que podia dar a impressão de inverter a competência automaticamente;
+- mantida a pré-validação da crítica `010082` antes da geração;
+- mantido o bloqueio para arquivo com encerramentos em competências diferentes;
+- adicionada verificação pós-conversão garantindo que todas as datas de encerramento permaneçam byte a byte idênticas.
+
+### Segurança
+
+- nenhuma data assistencial é criada, inferida, invertida ou reescrita;
+- somente os campos estruturais de competência homologados podem ser modificados;
+- o self-test do executável falha se a lógica de seleção automática de competência reaparecer.
+
 ## [2.4.0] - 2026-08-12
 
 ### Adicionado
