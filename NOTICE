@@ -1,0 +1,14 @@
+Gentill Competência APAC
+Copyright 2026 Gentill Mob Ops
+
+Este projeto é uma ferramenta independente para validação e ajuste controlado de competência em arquivos utilizados em fluxos de APAC.
+
+Não é desenvolvido, mantido, homologado, distribuído ou patrocinado oficialmente pelo DATASUS, Ministério da Saúde, SUS, MV/SoulMV ou por outros fornecedores e órgãos citados na documentação.
+
+APAC, DATASUS, SUS, MV, SoulMV e demais nomes, marcas e sistemas mencionados pertencem aos seus respectivos titulares.
+
+O uso deste software não substitui layouts, regras de faturamento, validações, manuais ou sistemas oficiais. Arquivos gerados devem ser validados no ambiente oficial correspondente antes de utilização em produção.
+
+Projeto: Gentill Mob Ops
+Site: https://www.gentillops.com.br
+Licença: Apache License 2.0
