@@ -39,10 +39,10 @@ jobs:
             -p:DebugSymbols=false `
             -o publish
 
-      - name: Self-test embedded v2.4.0 application
+      - name: Self-test embedded v2.4.1 application
         shell: pwsh
         run: |
-          $exe = Join-Path $PWD 'publish/Gentill_Competencia_APAC_v2.4.0.exe'
+          $exe = Join-Path $PWD 'publish/Gentill_Competencia_APAC_v2.4.1.exe'
           if (!(Test-Path $exe)) { throw "Executável não foi gerado: $exe" }
           $p = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Self-test falhou com código $($p.ExitCode)" }
@@ -51,24 +51,23 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force release | Out-Null
-          Copy-Item publish/Gentill_Competencia_APAC_v2.4.0.exe release/
-          $hash = (Get-FileHash release/Gentill_Competencia_APAC_v2.4.0.exe -Algorithm SHA256).Hash.ToLower()
-          "SHA-256  Gentill_Competencia_APAC_v2.4.0.exe`r`n$hash" | Set-Content release/SHA256.txt -Encoding utf8
+          Copy-Item publish/Gentill_Competencia_APAC_v2.4.1.exe release/
+          $hash = (Get-FileHash release/Gentill_Competencia_APAC_v2.4.1.exe -Algorithm SHA256).Hash.ToLower()
+          "SHA-256  Gentill_Competencia_APAC_v2.4.1.exe`r`n$hash" | Set-Content release/SHA256.txt -Encoding utf8
           @"
-          Gentill Competência APAC v2.4.0 — Validador OCI/PMAE
+          Gentill Competência APAC v2.4.1 — Conversão controlada
 
           Executável portátil para Windows x64.
           Não requer instalação do .NET.
 
-          A aplicação incorpora os arquivos atuais de src/ dentro do próprio executável.
-          Ao iniciar, abre a interface em modo aplicativo do Microsoft Edge quando disponível.
-
-          Segurança:
-          - validação OCI/PMAE e prevenção do cenário 010082;
-          - datas assistenciais não são reescritas;
-          - conversão limitada aos campos estruturais de competência homologados;
-          - arquivo misto é bloqueado;
-          - operação local/offline.
+          CORREÇÃO v2.4.1:
+          - a competência do arquivo é mantida como origem ao carregar;
+          - nenhuma competência de destino é escolhida automaticamente;
+          - datas de encerramento são apenas lidas e exibidas como diagnóstico;
+          - o operador escolhe manualmente mês/ano de destino;
+          - somente campos estruturais de competência são alterados;
+          - datas assistenciais permanecem byte a byte intactas;
+          - divergências com risco de 010082 são sinalizadas/bloqueadas antes da geração.
 
           Ferramenta independente — não oficial DATASUS/MV.
           by Gentill Mob Ops · www.gentillops.com.br
@@ -77,36 +76,38 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Gentill_Competencia_APAC_v2.4.0_Windows_x64
+          name: Gentill_Competencia_APAC_v2.4.1_Windows_x64
           path: release/*
           if-no-files-found: error
 
-      - name: Publish GitHub Release v2.4.0
+      - name: Publish GitHub Release v2.4.1
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $notes = @"
-          ## Gentill Competência APAC v2.4.0 — Validador OCI/PMAE
+          ## Gentill Competência APAC v2.4.1 — Conversão controlada
 
-          Executável portátil para Windows x64.
+          Correção da lógica de seleção de competência da v2.4.0.
 
-          ### Destaques
-          - diagnóstico automático da competência por encerramento;
-          - recomendação da competência compatível;
-          - bloqueio de divergências com risco de crítica 010082;
-          - bloqueio de arquivos com competências mistas;
-          - datas assistenciais permanecem intactas;
-          - suporte aos perfis APAC Magnético 3.12c e 4.00;
-          - auditoria e preservação binária fora dos campos de competência.
+          ### Correções
+          - remove seleção automática da competência baseada nas datas de encerramento;
+          - mantém a competência realmente gravada no arquivo como origem;
+          - encerramentos são exibidos somente para diagnóstico;
+          - mês e ano de destino são sempre escolhidos pelo operador;
+          - nenhuma data assistencial é criada, invertida ou reescrita;
+          - conversão continua restrita aos campos estruturais de competência;
+          - pré-validação 010082 permanece ativa.
+
+          **A v2.4.1 substitui a v2.4.0 para uso operacional.**
 
           **Ferramenta independente — não oficial DATASUS/MV.**
 
           by Gentill Mob Ops · www.gentillops.com.br
           "@
 
-          if (gh release view v2.4.0 2>$null) {
-            gh release upload v2.4.0 release/Gentill_Competencia_APAC_v2.4.0.exe release/SHA256.txt release/LEIA-ME.txt --clobber
+          if (gh release view v2.4.1 2>$null) {
+            gh release upload v2.4.1 release/Gentill_Competencia_APAC_v2.4.1.exe release/SHA256.txt release/LEIA-ME.txt --clobber
           } else {
-            gh release create v2.4.0 release/Gentill_Competencia_APAC_v2.4.0.exe release/SHA256.txt release/LEIA-ME.txt --target "${{ github.sha }}" --title "Gentill Competência APAC v2.4.0" --notes $notes
+            gh release create v2.4.1 release/Gentill_Competencia_APAC_v2.4.1.exe release/SHA256.txt release/LEIA-ME.txt --target "${{ github.sha }}" --title "Gentill Competência APAC v2.4.1" --notes $notes
           }
