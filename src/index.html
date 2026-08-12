@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Gentill Competência APAC — v2.3.0 Desktop Técnico</title>
+<title>Gentill Competência APAC — v2.4.0 Validador OCI/PMAE</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="wrap"><main class="shell">
   <header class="titlebar">
     <div class="app-title"><div class="app-icon">G</div><div class="app-name">Gentill Competência APAC</div></div>
-    <div class="app-version">v2.3.0 · Desktop técnico</div>
+    <div class="app-version">v2.4.0 · Validador OCI/PMAE</div>
   </header>
 
   <div class="commandbar">
@@ -18,13 +18,15 @@
     <div class="separator"></div>
     <div class="command-item"><strong>Perfil:</strong>&nbsp;01 / 14 / 06 / 13</div>
     <div class="separator"></div>
+    <div class="command-item">Validação 010082 ativa</div>
+    <div class="separator"></div>
     <div class="command-item">Preservação binária ativa</div>
   </div>
 
   <section class="content">
     <div class="steps" aria-label="Etapas do processo">
       <div class="step active" id="step1"><div class="step-no">1</div><div><div class="step-title">Arquivo de origem</div><div class="step-copy">Selecionar e validar estrutura</div></div></div>
-      <div class="step" id="step2"><div class="step-no">2</div><div><div class="step-title">Competência de destino</div><div class="step-copy">Definir mês e ano</div></div></div>
+      <div class="step" id="step2"><div class="step-no">2</div><div><div class="step-title">Diagnóstico da competência</div><div class="step-copy">Conferir encerramentos e recomendação</div></div></div>
       <div class="step" id="step3"><div class="step-no">3</div><div><div class="step-title">Conversão e auditoria</div><div class="step-copy">Gerar cópia controlada</div></div></div>
     </div>
 
@@ -45,10 +47,24 @@
 
             <div class="file-summary">
               <div class="metric"><div class="label">Competência</div><div class="value" id="metricComp">—</div></div>
+              <div class="metric"><div class="label">Recomendada</div><div class="value" id="metricRecommended">—</div></div>
               <div class="metric"><div class="label">APACs</div><div class="value" id="metricApacs">—</div></div>
               <div class="metric"><div class="label">Procedimentos</div><div class="value" id="metricProc">—</div></div>
-              <div class="metric"><div class="label">Tamanho</div><div class="value small" id="metricSize">—</div></div>
             </div>
+          </div>
+
+          <div class="diagnostic-box" id="competencyDiagnostic">
+            <div class="diagnostic-head">
+              <div><div class="panel-kicker">Validação OCI/PMAE</div><div class="diagnostic-title">Diagnóstico da competência</div></div>
+              <span class="diagnostic-badge" id="diagState">Aguardando</span>
+            </div>
+            <div class="diagnostic-grid">
+              <div><span>Competência gravada</span><strong id="diagSource">—</strong></div>
+              <div><span>Competência recomendada</span><strong id="recommendedComp">—</strong></div>
+              <div><span>Encerramentos</span><strong id="closingRange">—</strong></div>
+            </div>
+            <div class="diagnostic-text" id="diagSummary">Selecione um arquivo para analisar a consistência entre competência e data de encerramento.</div>
+            <button type="button" class="secondary hidden" id="applyRecommended">Aplicar competência recomendada</button>
           </div>
 
           <div class="group">
@@ -62,11 +78,12 @@
                       <option value="312">3.12c — legado</option>
                       <option value="400" selected>4.00 — atual</option>
                     </select>
-                    <div class="profile-note ok" id="profileNote">APAC Magnético 4.00: perfil atual. Mantém a estrutura do arquivo e aplica a validação da competência sem alterar dados clínicos.</div>
+                    <div class="profile-note ok" id="profileNote">APAC Magnético 4.00: validação preventiva de encerramento x competência e preservação dos dados assistenciais.</div>
                   </div>
                   <div class="compat-list" id="compatList">Aguardando arquivo para validar compatibilidade.</div>
                 </div>
               </div>
+
               <div class="transform">
                 <div class="comp-card"><div class="comp-label">Origem detectada</div><div class="comp-value" id="sourceComp">—</div><div class="comp-name" id="sourceInfo">Aguardando arquivo</div></div>
                 <div class="arrow">→</div>
@@ -81,7 +98,7 @@
             </div>
           </div>
 
-          <div class="safety"><div class="safety-icon">✓</div><div><strong>Modo de preservação ativo</strong><p>O arquivo original não é regravado. A conversão altera somente os campos de competência homologados. O perfil 3.12c ou 4.00 controla as validações de compatibilidade; dados clínicos e datas de encerramento não são alterados automaticamente.</p></div></div>
+          <div class="safety"><div class="safety-icon">✓</div><div><strong>Datas assistenciais protegidas</strong><p>A v2.4 altera somente campos estruturais de competência. Data inicial, validade, ocorrência/encerramento, autorização, solicitação, paciente, APAC, procedimentos, CID, CNS e CNES não são reescritos.</p></div></div>
 
           <div class="actions"><button class="secondary" id="validate" disabled>Validar estrutura</button><button class="primary" id="generate" disabled>Gerar arquivo convertido</button></div>
         </div>
@@ -95,7 +112,8 @@
           <div class="checks">
             <div class="check"><span>Estrutura</span><strong id="checkStructure">—</strong></div>
             <div class="check"><span>APAC Magnético alvo</span><strong id="checkProfile">4.00</strong></div>
-            <div class="check"><span>Compatibilidade do perfil</span><strong id="checkCompat">Aguardando</strong></div>
+            <div class="check"><span>Competência recomendada</span><strong id="checkRecommended">—</strong></div>
+            <div class="check"><span>Consistência encerramento</span><strong id="checkCompat">Aguardando</strong></div>
             <div class="check"><span>Registros homologados</span><strong id="checkRecords">01 / 14 / 06 / 13</strong></div>
             <div class="check"><span>Bytes fora da competência</span><strong id="checkOutside">Não alterados</strong></div>
             <div class="check"><span>Campo de controle</span><strong id="checkControl">—</strong></div>
