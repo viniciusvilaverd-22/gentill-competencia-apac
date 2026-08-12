@@ -4,6 +4,34 @@ Todas as alterações relevantes deste projeto serão registradas neste arquivo.
 
 O formato segue a ideia do [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/), e o versionamento utiliza versões explícitas do aplicativo.
 
+## [2.4.0] - 2026-08-12
+
+### Adicionado
+
+- módulo **Validador OCI/PMAE**;
+- análise das datas de encerramento presentes nos registros `14`;
+- recomendação automática de competência quando todas as APACs válidas apontam para o mesmo mês;
+- seleção automática da competência recomendada quando a competência gravada diverge dos encerramentos;
+- bloqueio de geração quando o destino selecionado não corresponde à competência indicada pelos encerramentos;
+- bloqueio de conversão automática para arquivos com APACs encerradas em competências distintas;
+- painel visual de diagnóstico com competência gravada, competência recomendada e intervalo de encerramentos;
+- pré-validação da crítica `010082` para o perfil APAC Magnético 3.12c;
+- aplicação preventiva da mesma consistência no perfil APAC Magnético 4.00;
+- auditoria explícita da quantidade de datas assistenciais alteradas (`0`).
+
+### Alterado
+
+- o perfil 3.12c deixou de permitir confirmação para gerar arquivo sabidamente incompatível com os encerramentos;
+- a validação de encerramento x competência passou a ser regra de segurança dos dois perfis;
+- o fluxo visual passou a destacar o diagnóstico da competência antes da conversão;
+- a documentação foi atualizada para registrar que uma remessa APAC pode ter competência de apresentação diferente do período da fatura.
+
+### Segurança
+
+- datas de início, validade, ocorrência/encerramento, solicitação e autorização continuam protegidas e não são reescritas pela conversão;
+- o conversor continua validando que nenhum byte fora dos campos estruturais de competência seja modificado;
+- a geração final é revalidada contra os encerramentos antes da liberação do arquivo.
+
 ## [2.3.0] - 2026-08-12
 
 ### Adicionado
