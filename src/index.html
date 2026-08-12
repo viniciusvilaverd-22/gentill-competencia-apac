@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gentill Competência APAC — v2.3.0 Desktop Técnico</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap"><main class="shell">
+  <header class="titlebar">
+    <div class="app-title"><div class="app-icon">G</div><div class="app-name">Gentill Competência APAC</div></div>
+    <div class="app-version">v2.3.0 · Desktop técnico</div>
+  </header>
+
+  <div class="commandbar">
+    <div class="command-item"><span class="command-dot"></span><span>Conversor local</span></div>
+    <div class="separator"></div>
+    <div class="command-item"><strong>Perfil:</strong>&nbsp;01 / 14 / 06 / 13</div>
+    <div class="separator"></div>
+    <div class="command-item">Preservação binária ativa</div>
+  </div>
+
+  <section class="content">
+    <div class="steps" aria-label="Etapas do processo">
+      <div class="step active" id="step1"><div class="step-no">1</div><div><div class="step-title">Arquivo de origem</div><div class="step-copy">Selecionar e validar estrutura</div></div></div>
+      <div class="step" id="step2"><div class="step-no">2</div><div><div class="step-title">Competência de destino</div><div class="step-copy">Definir mês e ano</div></div></div>
+      <div class="step" id="step3"><div class="step-no">3</div><div><div class="step-title">Conversão e auditoria</div><div class="step-copy">Gerar cópia controlada</div></div></div>
+    </div>
+
+    <div class="workspace">
+      <section class="panel">
+        <div class="panel-head">
+          <div><div class="panel-kicker">Arquivo de trabalho</div><div class="panel-title">Conversão de competência</div></div>
+          <div class="mini" id="profileMini">Layout homologado: 01 / 14 / 06 / 13</div>
+        </div>
+        <div class="panel-body">
+          <div class="file-box">
+            <label class="drop" id="drop">
+              <div class="drop-icon">⇧</div>
+              <div><div class="drop-title">Selecionar arquivo APOCI</div><div class="mini">Arraste o arquivo ou clique para procurar</div><div class="filename" id="filename">Nenhum arquivo selecionado</div></div>
+              <div class="pick-label">Procurar...</div>
+              <input id="file" type="file">
+            </label>
+
+            <div class="file-summary">
+              <div class="metric"><div class="label">Competência</div><div class="value" id="metricComp">—</div></div>
+              <div class="metric"><div class="label">APACs</div><div class="value" id="metricApacs">—</div></div>
+              <div class="metric"><div class="label">Procedimentos</div><div class="value" id="metricProc">—</div></div>
+              <div class="metric"><div class="label">Tamanho</div><div class="value small" id="metricSize">—</div></div>
+            </div>
+          </div>
+
+          <div class="group">
+            <div class="group-title">Parâmetros da conversão</div>
+            <div class="group-body">
+              <div class="profile-box">
+                <div class="profile-head"><label for="apacTarget">Versão do APAC Magnético de destino</label><span class="mini">perfil de compatibilidade</span></div>
+                <div class="profile-body">
+                  <div class="profile-select">
+                    <select id="apacTarget" aria-label="Versão do APAC Magnético">
+                      <option value="312">3.12c — legado</option>
+                      <option value="400" selected>4.00 — atual</option>
+                    </select>
+                    <div class="profile-note ok" id="profileNote">APAC Magnético 4.00: perfil atual. Mantém a estrutura do arquivo e aplica a validação da competência sem alterar dados clínicos.</div>
+                  </div>
+                  <div class="compat-list" id="compatList">Aguardando arquivo para validar compatibilidade.</div>
+                </div>
+              </div>
+              <div class="transform">
+                <div class="comp-card"><div class="comp-label">Origem detectada</div><div class="comp-value" id="sourceComp">—</div><div class="comp-name" id="sourceInfo">Aguardando arquivo</div></div>
+                <div class="arrow">→</div>
+                <div class="comp-card target"><div class="comp-label">Destino selecionado</div><div class="comp-value" id="targetCompPreview">—</div><div class="comp-name" id="targetNamePreview">APOCI.—</div></div>
+              </div>
+
+              <div class="fields">
+                <div class="field"><label for="month">Mês de destino</label><select id="month"></select></div>
+                <div class="field"><label for="year">Ano de destino</label><input id="year" type="number" min="2000" max="2099"></div>
+              </div>
+              <div class="month-grid" id="monthGrid" aria-label="Atalhos de mês"></div>
+            </div>
+          </div>
+
+          <div class="safety"><div class="safety-icon">✓</div><div><strong>Modo de preservação ativo</strong><p>O arquivo original não é regravado. A conversão altera somente os campos de competência homologados. O perfil 3.12c ou 4.00 controla as validações de compatibilidade; dados clínicos e datas de encerramento não são alterados automaticamente.</p></div></div>
+
+          <div class="actions"><button class="secondary" id="validate" disabled>Validar estrutura</button><button class="primary" id="generate" disabled>Gerar arquivo convertido</button></div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-head"><div><div class="panel-kicker">Diagnóstico</div><div class="panel-title">Status da operação</div></div><div class="status-pill" id="topStatusPill">Aguardando</div></div>
+        <div class="panel-body">
+          <div class="status-card" id="statusCard"><div class="status-head"><div class="status-title" id="statusTitle">Pronto para iniciar</div><div class="status-pill" id="statusPill">Sem arquivo</div></div><div class="status-text" id="status">Selecione um arquivo para começar.</div></div>
+
+          <div class="checks">
+            <div class="check"><span>Estrutura</span><strong id="checkStructure">—</strong></div>
+            <div class="check"><span>APAC Magnético alvo</span><strong id="checkProfile">4.00</strong></div>
+            <div class="check"><span>Compatibilidade do perfil</span><strong id="checkCompat">Aguardando</strong></div>
+            <div class="check"><span>Registros homologados</span><strong id="checkRecords">01 / 14 / 06 / 13</strong></div>
+            <div class="check"><span>Bytes fora da competência</span><strong id="checkOutside">Não alterados</strong></div>
+            <div class="check"><span>Campo de controle</span><strong id="checkControl">—</strong></div>
+          </div>
+
+          <div class="result-file hidden" id="resultFile"><div class="mini">Arquivo gerado</div><div class="outname" id="resultName">—</div><div class="mini" id="resultMeta">Pronto para teste no APAC Magnético.</div></div>
+
+          <div class="audit-actions"><button class="secondary" id="auditBtn" disabled>Salvar relatório de auditoria</button></div>
+        </div>
+      </aside>
+    </div>
+
+    <details id="auditDetails"><summary>Detalhes técnicos da auditoria <span class="mini">visualização avançada</span></summary><div class="audit"><table><tbody id="auditBody"></tbody></table></div></details>
+  </section>
+
+  <footer class="statusbar"><div class="status-left"><span class="status-indicator"></span><span>Aplicação local · sem envio de dados para servidor</span></div><strong>by Gentill Mob Ops · <a href="https://www.gentillops.com.br" target="_blank" rel="noopener noreferrer">www.gentillops.com.br</a></strong></footer>
+</main></div>
+
+<script src="app.js"></script>
+</body>
+</html>
