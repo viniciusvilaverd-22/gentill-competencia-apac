@@ -5,14 +5,14 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>Gentill_Competencia_APAC_v2.4.1</AssemblyName>
+    <AssemblyName>Gentill_Competencia_APAC_v2.4.2</AssemblyName>
     <RootNamespace>GentillCompetenciaAPAC</RootNamespace>
-    <Version>2.4.1</Version>
-    <FileVersion>2.4.1.0</FileVersion>
-    <AssemblyVersion>2.4.1.0</AssemblyVersion>
+    <Version>2.4.2</Version>
+    <FileVersion>2.4.2.0</FileVersion>
+    <AssemblyVersion>2.4.2.0</AssemblyVersion>
     <Company>Gentill Mob Ops</Company>
     <Product>Gentill Competência APAC</Product>
-    <Description>Conversor controlado de competência APOCI/APAC com validação OCI/PMAE e preservação integral das datas assistenciais.</Description>
+    <Description>Conversor controlado de competência APOCI/APAC. Datas são somente diagnóstico e nunca bloqueiam a geração; somente campos estruturais de competência são alterados.</Description>
   </PropertyGroup>
 
   <ItemGroup>
