@@ -1,3 +1,5 @@
+const APP_VERSION='2.4.2';
+const DATE_DIAGNOSTIC_NON_BLOCKING_V242=true;
 const months=[['01','JAN','Janeiro'],['02','FEV','Fevereiro'],['03','MAR','Março'],['04','ABR','Abril'],['05','MAI','Maio'],['06','JUN','Junho'],['07','JUL','Julho'],['08','AGO','Agosto'],['09','SET','Setembro'],['10','OUT','Outubro'],['11','NOV','Novembro'],['12','DEZ','Dezembro']];
 
 const profiles={
@@ -5,13 +7,13 @@ const profiles={
     label:'APAC Magnético 3.12c',
     short:'3.12c',
     current:false,
-    note:'Perfil legado. A crítica 010082 foi reproduzida quando a data de encerramento pertence a competência diferente da competência apresentada.'
+    note:'Perfil legado. Divergências entre competência e data de encerramento são exibidas como aviso de risco da crítica 010082, sem bloquear a geração.'
   },
   '400':{
     label:'APAC Magnético 4.00',
     short:'4.00',
     current:true,
-    note:'Perfil atual. Aplica pré-validação preventiva de encerramento x competência e preserva integralmente as datas assistenciais.'
+    note:'Perfil atual. Datas de encerramento são somente diagnóstico; avisos não bloqueiam a conversão e nenhuma data assistencial é alterada.'
   }
 };
 
@@ -142,7 +144,13 @@ async function sha256(bytes){
 function monthMeta(m){return months.find(x=>x[0]===m)||['--','---','—']}
 function selectedProfile(){return profiles[profileSel.value]||profiles['400']}
 function fmtComp(c){return /^\d{6}$/.test(c)?`${c.slice(4,6)}/${c.slice(0,4)}`:'—'}
-function validDate8(s){return /^\d{8}$/.test(s)&&s!=='00000000'}
+function validDate8(s){
+  if(!/^\d{8}$/.test(s)||s==='00000000')return false;
+  const y=+s.slice(0,4),m=+s.slice(4,6),d=+s.slice(6,8);
+  if(y<1900||y>2199||m<1||m>12||d<1||d>31)return false;
+  const dt=new Date(Date.UTC(y,m-1,d));
+  return dt.getUTCFullYear()===y&&dt.getUTCMonth()===m-1&&dt.getUTCDate()===d;
+}
 function fmtDate(s){return validDate8(s)?`${s.slice(6,8)}/${s.slice(4,6)}/${s.slice(0,4)}`:'—'}
 
 function analyzeClosings(p){
@@ -158,14 +166,14 @@ function analyzeClosings(p){
   if(!closings.length){
     return {
       mode:'unknown',level:'warn',observed:null,closings,counts,minDate:null,maxDate:null,
-      message:'Nenhuma data de encerramento válida foi identificada nos registros 14. O sistema não inferirá uma competência a partir de datas.'
+      message:'Nenhuma data de encerramento válida foi identificada nos registros 14. Isso é apenas diagnóstico e não impede a geração.'
     };
   }
 
   if(comps.length>1){
     return {
-      mode:'mixed',level:'bad',observed:null,closings,counts,minDate:dates[0],maxDate:dates[dates.length-1],
-      message:`Foram lidos encerramentos em competências diferentes: ${comps.map(c=>`${fmtComp(c)} (${counts[c]})`).join(', ')}. As datas foram apenas lidas; nenhuma competência foi criada ou alterada.`
+      mode:'mixed',level:'warn',observed:null,closings,counts,minDate:dates[0],maxDate:dates[dates.length-1],
+      message:`Aviso: foram lidas datas de encerramento em meses diferentes: ${comps.map(c=>`${fmtComp(c)} (${counts[c]})`).join(', ')}. A geração permanece disponível; nenhuma dessas datas será alterada.`
     };
   }
 
@@ -181,7 +189,7 @@ function analyzeClosings(p){
     maxDate:dates[dates.length-1],
     message:consistent
       ?`A competência gravada ${fmtComp(p.src)} coincide com o mês observado nas ${closings.length} data(s) de encerramento lidas.`
-      :`A competência gravada é ${fmtComp(p.src)} e o mês observado nas ${closings.length} data(s) de encerramento é ${fmtComp(observed)}. Esta informação é somente diagnóstica; o destino não será alterado automaticamente.`
+      :`Aviso: a competência gravada é ${fmtComp(p.src)} e o mês observado nas ${closings.length} data(s) de encerramento é ${fmtComp(observed)}. Isso não bloqueia a geração e nenhuma data será reescrita.`
   };
 }
 
@@ -191,38 +199,38 @@ function compatibilityCheck(p,dst,profileId=profileSel.value){
   const result={profile:pr,diag,level:'ok',issues:[],message:''};
 
   if(diag.mode==='mixed'){
-    result.level='bad';
+    result.level='warn';
     result.issues=diag.closings;
-    result.message='Conversão para uma única competência bloqueada: o arquivo contém datas de encerramento em mais de uma competência. Nenhuma data será modificada pelo sistema.';
+    result.message='Aviso de datas mistas: o arquivo contém encerramentos em mais de um mês. A conversão é permitida porque datas são somente diagnóstico; valide o resultado no APAC Magnético.';
     return result;
   }
 
   if(diag.observed&&dst!==diag.observed){
-    result.level='bad';
+    result.level='warn';
     result.issues=diag.closings.filter(a=>a.encerramento.slice(0,6)!==dst);
     const prefix=profileId==='312'
-      ?'Risco comprovado de crítica 010082 no perfil 3.12c'
-      :'Pré-validação preventiva do perfil 4.00';
-    result.message=`${prefix}: o destino escolhido ${fmtComp(dst)} não coincide com o mês ${fmtComp(diag.observed)} lido nas datas de encerramento. O sistema não altera essas datas; escolha a competência correta antes de gerar.`;
+      ?'Aviso de possível crítica 010082 no perfil 3.12c'
+      :'Aviso preventivo do perfil 4.00';
+    result.message=`${prefix}: o destino escolhido ${fmtComp(dst)} não coincide com o mês ${fmtComp(diag.observed)} observado nas datas de encerramento. A geração está liberada; nenhuma data será modificada.`;
     return result;
   }
 
   if(diag.mode==='unknown'){
     result.level='warn';
-    result.message=`${pr.label}: não foi possível comparar a competência escolhida com datas de encerramento. A conversão continuará limitada aos campos estruturais de competência.`;
+    result.message=`${pr.label}: não foi possível comparar a competência escolhida com datas de encerramento. A geração permanece liberada e restrita aos campos estruturais de competência.`;
     return result;
   }
 
   if(profileId==='400'&&!/04\.00/.test(p.version||'')){
     result.level='warn';
-    result.message=`O destino escolhido é coerente com os encerramentos lidos, mas o perfil 4.00 foi selecionado e o cabeçalho informa "${p.version||'versão não identificada'}". Revise a versão antes da importação.`;
+    result.message=`O perfil 4.00 foi selecionado e o cabeçalho informa "${p.version||'versão não identificada'}". Revise a versão antes da importação; este aviso não bloqueia a geração.`;
     return result;
   }
 
   result.level='ok';
   result.message=profileId==='312'
-    ?`Perfil 3.12c: destino escolhido ${fmtComp(dst)} compatível com as datas de encerramento lidas. Pré-validação 010082 aprovada.`
-    :`Perfil 4.00: destino escolhido ${fmtComp(dst)} compatível com as datas de encerramento lidas.`;
+    ?`Perfil 3.12c: destino escolhido ${fmtComp(dst)} coincide com as datas de encerramento lidas.`
+    :`Perfil 4.00: destino escolhido ${fmtComp(dst)} coincide com as datas de encerramento lidas.`;
   return result;
 }
 
@@ -240,7 +248,7 @@ function refreshDiagnostic(){
     $('diagSource').textContent='—';
     $('recommendedComp').textContent='—';
     $('closingRange').textContent='—';
-    $('diagSummary').textContent='Selecione um arquivo. As datas serão somente lidas; nenhuma competência de destino será escolhida automaticamente.';
+    $('diagSummary').textContent='Selecione um arquivo. Datas serão somente lidas para diagnóstico e nunca bloquearão a geração.';
     $('checkRecommended').textContent='—';
     $('competencyDiagnostic').className='diagnostic-box';
     return null;
@@ -254,7 +262,7 @@ function refreshDiagnostic(){
     ?(d.minDate===d.maxDate?fmtDate(d.minDate):`${fmtDate(d.minDate)} → ${fmtDate(d.maxDate)}`)
     :'Não identificados';
   $('diagSummary').textContent=d.message;
-  $('diagState').textContent=d.level==='ok'?'Consistente':d.level==='bad'?'Datas mistas':d.mode==='unknown'?'Não identificado':'Divergência';
+  $('diagState').textContent=d.level==='ok'?'Consistente':d.mode==='mixed'?'Aviso: datas mistas':d.mode==='unknown'?'Aviso':'Aviso de divergência';
   $('competencyDiagnostic').className='diagnostic-box '+d.level;
   return d;
 }
@@ -269,7 +277,7 @@ function refreshCompatibility(){
   let dst;
   try{dst=targetComp()}catch{dst=state.parsed.src}
   const c=compatibilityCheck(state.parsed,dst);
-  $('checkCompat').textContent=c.level==='ok'?'Compatível':c.level==='bad'?'Bloqueado':'Revisar';
+  $('checkCompat').textContent=c.level==='ok'?'Compatível':'Aviso';
 
   let details='';
   if(c.issues.length){
@@ -291,10 +299,11 @@ function refreshTargetPreview(){
   if(state.parsed){
     updateSteps(2);
     refreshDiagnostic();
-    const c=refreshCompatibility();
+    refreshCompatibility();
     let dst='';
     try{dst=targetComp()}catch{}
-    genBtn.disabled=!c||c.level==='bad'||dst===state.parsed.src;
+    // v2.4.2: avisos de data nunca desabilitam o botão de geração.
+    genBtn.disabled=!dst||dst===state.parsed.src;
   }
 }
 
@@ -310,8 +319,6 @@ async function loadFile(file){
     $('sourceComp').textContent=`${m}/${y}`;
     $('sourceInfo').textContent=`${p.lines.length} linhas · ${p.version}`;
 
-    // Regra v2.4.1: o destino começa exatamente igual à competência gravada.
-    // Nenhuma data do arquivo escolhe ou altera o destino automaticamente.
     monthSel.value=m;
     $('year').value=y;
 
@@ -331,10 +338,8 @@ async function loadFile(file){
     updateSteps(2);
 
     const base=`Competência realmente gravada no arquivo: ${fmtComp(p.src)}.\nNenhuma competência de destino foi selecionada automaticamente.`;
-    if(d.mode==='mixed'){
-      setStatus(`${base}\n${d.message}`,'bad','Datas de encerramento em meses distintos');
-    }else if(d.observed&&d.observed!==p.src){
-      setStatus(`${base}\nMês observado nos encerramentos: ${fmtComp(d.observed)}.\nPara corrigir a competência, escolha manualmente o mês/ano de destino. As datas permanecerão intactas.`,'warn','Competência gravada requer conferência');
+    if(d.level==='warn'){
+      setStatus(`${base}\n${d.message}\nEscolha manualmente a competência de destino. O aviso de data não bloqueará a geração.`,'warn','Arquivo carregado com aviso de data');
     }else{
       setStatus(`${base}\n${p.counts['14']} APAC(s) · ${p.counts['13']} procedimento(s) · ${p.counts['06']} registro(s) 06.\n${d.message}`,'ok','Arquivo carregado sem alteração');
     }
@@ -367,12 +372,13 @@ function renderAuditBase(){
   const d=analyzeClosings(p);
   const c=refreshCompatibility();
   const rows=[
-    ['Versão da aplicação','2.4.1 — Conversão controlada'],
+    ['Versão da aplicação','2.4.2 — Conversão controlada'],
     ['Perfil de destino',pr.label],
     ['Estrutura','APAC — registros 01/14/06/13'],
     ['Competência gravada',fmtComp(p.src)],
     ['Mês observado nos encerramentos',d.observed?fmtComp(d.observed):d.mode==='mixed'?'Múltiplos':'Não identificado'],
-    ['Diagnóstico somente leitura',d.message],
+    ['Diagnóstico de datas',d.message],
+    ['Regra de bloqueio','Datas geram somente aviso; apenas falhas estruturais/integridade bloqueiam'],
     ['APACs',p.counts['14']],
     ['Procedimentos 13',p.counts['13']],
     ['Registros 06',p.counts['06']],
@@ -395,9 +401,9 @@ valBtn.onclick=()=>{
     refreshCompatibility();
     renderAuditBase();
 
-    const kind=c.level==='bad'?'bad':c.level==='warn'?'warn':'ok';
-    const title=c.level==='bad'?'Destino incompatível':c.level==='warn'?'Validação concluída com atenção':'Validação concluída';
-    setStatus(`Nenhuma alteração foi realizada.\nCompetência gravada: ${fmtComp(p.src)}.\nDestino escolhido: ${fmtComp(dst)}.\n${d.message}\n${c.message}`,kind,title);
+    const kind=c.level==='warn'?'warn':'ok';
+    const title=c.level==='warn'?'Validação concluída com aviso':'Validação concluída';
+    setStatus(`Nenhuma alteração foi realizada.\nCompetência gravada: ${fmtComp(p.src)}.\nDestino escolhido: ${fmtComp(dst)}.\n${d.message}\n${c.message}\nAvisos de data não impedem a geração.`,kind,title);
   }catch(e){
     setStatus(e.message,'bad','Validação falhou');
   }
@@ -412,7 +418,6 @@ genBtn.onclick=async()=>{
     const diag=analyzeClosings(p);
     const comp=compatibilityCheck(p,dst);
     const pr=selectedProfile();
-    if(comp.level==='bad')throw Error(comp.message);
 
     const out=new Uint8Array(state.bytes);
     const digits=[...dst].map(c=>c.charCodeAt(0));
@@ -451,7 +456,6 @@ genBtn.onclick=async()=>{
       if(normalizedA[i]!==normalizedB[i])throw Error('Falha de preservação: foi detectada diferença fora dos campos estruturais de competência.');
     }
 
-    // Verificação adicional: todas as datas de encerramento lidas devem permanecer idênticas.
     const originalClosings=p.apacs.map(a=>a.encerramento);
     const finalClosings=p2.apacs.map(a=>a.encerramento);
     if(originalClosings.length!==finalClosings.length)throw Error('Falha de segurança ao revalidar as APACs.');
@@ -481,6 +485,7 @@ genBtn.onclick=async()=>{
       version:p.version,
       profile:pr.label,
       compat:comp.message,
+      compatLevel:comp.level,
       compatIssues:comp.issues||[],
       shaA,shaB,shaNA,shaNB,
       name:outName,
@@ -503,9 +508,10 @@ genBtn.onclick=async()=>{
     $('checkOutside').textContent='0 alterados';
     updateSteps(3);
 
-    setStatus(`Arquivo gerado com sucesso.\nCompetência: ${fmtComp(p.src)} → ${fmtComp(dst)}.\n${p.fields.length} campos estruturais de competência tratados.\nDatas assistenciais alteradas: 0.\nBytes fora das posições autorizadas alterados: 0.`,'ok','Conversão concluída');
+    const warn=comp.level==='warn'?`\nAviso registrado: ${comp.message}`:'';
+    setStatus(`Arquivo gerado com sucesso.\nCompetência: ${fmtComp(p.src)} → ${fmtComp(dst)}.\n${p.fields.length} campos estruturais de competência tratados.\nDatas assistenciais alteradas: 0.\nBytes fora das posições autorizadas alterados: 0.${warn}`,'ok','Conversão concluída');
   }catch(e){
-    setStatus(e.message,'bad','Geração bloqueada');
+    setStatus(e.message,'bad','Geração bloqueada por estrutura/integridade');
   }
 };
 
@@ -513,12 +519,12 @@ function renderAuditFinal(){
   const a=state.audit;
   const tbody=$('auditBody');
   const rows=[
-    ['Versão da aplicação','2.4.1 — Conversão controlada'],
+    ['Versão da aplicação','2.4.2 — Conversão controlada'],
     ['Arquivo origem',a.source],
     ['Arquivo saída',a.name],
     ['APAC Magnético alvo',a.profile],
-    ['Diagnóstico somente leitura',a.diagnosis],
-    ['Compatibilidade do destino',a.compat],
+    ['Diagnóstico de datas',a.diagnosis],
+    ['Aviso/compatibilidade do destino',a.compat],
     ['Competência realmente gravada',fmtComp(a.src)],
     ['Mês observado nos encerramentos',a.observed?fmtComp(a.observed):'Não determinado'],
     ['Competência escolhida pelo operador',fmtComp(a.dst)],
@@ -543,7 +549,7 @@ function renderAuditFinal(){
 auditBtn.onclick=()=>{
   if(!state.audit)return;
   const a=state.audit;
-  const txt=`GENTILL COMPETENCIA APAC — AUDITORIA v2.4.1\r\nConversao controlada\r\nby Gentill Mob Ops · www.gentillops.com.br\r\n\r\nArquivo origem: ${a.source}\r\nArquivo saida: ${a.name}\r\nAPAC Magnetico alvo: ${a.profile}\r\nDiagnostico somente leitura: ${a.diagnosis}\r\nCompatibilidade do destino: ${a.compat}\r\nCompetencia realmente gravada: ${a.src}\r\nMes observado nos encerramentos: ${a.observed||'nao determinado'}\r\nCompetencia escolhida pelo operador: ${a.dst}\r\nCampos de competencia alterados: ${a.fields}\r\nDatas assistenciais alteradas: ${a.datesChanged}\r\nBytes efetivamente diferentes: ${a.changed}\r\nBytes fora dos campos autorizados: ${a.outside}\r\nTamanho: ${a.size} bytes\r\nAPACs: ${a.counts['14']}\r\nProcedimentos 13: ${a.counts['13']}\r\nRegistros 06: ${a.counts['06']}\r\nCampo de controle preservado: ${a.control}\r\nVersao do arquivo: ${a.version}\r\nSHA256 origem: ${a.shaA}\r\nSHA256 saida: ${a.shaB}\r\nSHA256 normalizado origem: ${a.shaNA}\r\nSHA256 normalizado saida: ${a.shaNB}\r\n\r\nREGRAS DE SEGURANCA\r\n- A competencia de origem e lida diretamente do arquivo.\r\n- Nenhuma competencia de destino e selecionada automaticamente.\r\n- O operador escolhe manualmente mes e ano de destino.\r\n- Somente campos estruturais de competencia foram modificados.\r\n- Datas de inicio, validade, ocorrencia/encerramento, autorizacao e solicitacao nao foram alteradas.\r\n- Dados assistenciais e identificadores nao foram reescritos.\r\n- Destino incompatível com os encerramentos e bloqueado para prevenir a critica 010082.\r\n`;
+  const txt=`GENTILL COMPETENCIA APAC — AUDITORIA v2.4.2\r\nConversao controlada\r\nby Gentill Mob Ops · www.gentillops.com.br\r\n\r\nArquivo origem: ${a.source}\r\nArquivo saida: ${a.name}\r\nAPAC Magnetico alvo: ${a.profile}\r\nDiagnostico de datas: ${a.diagnosis}\r\nAviso/compatibilidade: ${a.compat}\r\nCompetencia realmente gravada: ${a.src}\r\nMes observado nos encerramentos: ${a.observed||'nao determinado'}\r\nCompetencia escolhida pelo operador: ${a.dst}\r\nCampos de competencia alterados: ${a.fields}\r\nDatas assistenciais alteradas: ${a.datesChanged}\r\nBytes efetivamente diferentes: ${a.changed}\r\nBytes fora dos campos autorizados: ${a.outside}\r\nTamanho: ${a.size} bytes\r\nAPACs: ${a.counts['14']}\r\nProcedimentos 13: ${a.counts['13']}\r\nRegistros 06: ${a.counts['06']}\r\nCampo de controle preservado: ${a.control}\r\nVersao do arquivo: ${a.version}\r\nSHA256 origem: ${a.shaA}\r\nSHA256 saida: ${a.shaB}\r\nSHA256 normalizado origem: ${a.shaNA}\r\nSHA256 normalizado saida: ${a.shaNB}\r\n\r\nREGRAS DE SEGURANCA\r\n- A competencia de origem e lida diretamente do arquivo.\r\n- Nenhuma competencia de destino e selecionada automaticamente.\r\n- O operador escolhe manualmente mes e ano de destino.\r\n- Avisos de datas/encerramento NAO bloqueiam a geracao.\r\n- Somente falhas estruturais ou de integridade bloqueiam a geracao.\r\n- Somente campos estruturais de competencia foram modificados.\r\n- Datas de inicio, validade, ocorrencia/encerramento, autorizacao e solicitacao nao foram alteradas.\r\n- Dados assistenciais e identificadores nao foram reescritos.\r\n`;
   const b=new Blob([txt],{type:'text/plain;charset=utf-8'});
   const x=document.createElement('a');
   x.href=URL.createObjectURL(b);
