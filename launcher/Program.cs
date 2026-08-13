@@ -6,7 +6,7 @@ namespace GentillCompetenciaAPAC;
 
 internal static class Program
 {
-    private const string Version = "2.4.1";
+    private const string Version = "2.4.2";
     private const string IndexResource = "GentillCompetenciaAPAC.Embedded.index.html";
     private const string CssResource = "GentillCompetenciaAPAC.Embedded.styles.css";
     private const string JsResource = "GentillCompetenciaAPAC.Embedded.app.js";
@@ -61,7 +61,7 @@ internal static class Program
         {
             try
             {
-                var logPath = Path.Combine(Path.GetTempPath(), "GentillCompetenciaAPAC_v2.4.1_error.txt");
+                var logPath = Path.Combine(Path.GetTempPath(), "GentillCompetenciaAPAC_v2.4.2_error.txt");
                 File.WriteAllText(logPath, ex.ToString());
                 System.Windows.Forms.MessageBox.Show(
                     $"Não foi possível iniciar o Gentill Competência APAC.\n\nDetalhes registrados em:\n{logPath}\n\n{ex.Message}",
@@ -86,15 +86,17 @@ internal static class Program
             var css = ReadResourceText(CssResource);
             var js = ReadResourceText(JsResource);
 
-            if (!index.Contains("v2.4.1", StringComparison.Ordinal)) return 21;
-            if (!index.Contains("Conversão controlada", StringComparison.Ordinal)) return 22;
+            if (!index.Contains("v2.4.2", StringComparison.Ordinal)) return 21;
+            if (!index.Contains("010082: aviso, não bloqueio", StringComparison.Ordinal)) return 22;
             if (css.Length < 1000) return 23;
-            if (!js.Contains("010082", StringComparison.Ordinal)) return 24;
+            if (!js.Contains("DATE_DIAGNOSTIC_NON_BLOCKING_V242=true", StringComparison.Ordinal)) return 24;
             if (js.Length < 5000) return 25;
             if (js.Contains("initialTarget", StringComparison.Ordinal)) return 26;
             if (js.Contains("applyRecommended", StringComparison.Ordinal)) return 27;
-            if (!js.Contains("Nenhuma competência de destino foi selecionada automaticamente", StringComparison.Ordinal)) return 28;
+            if (!js.Contains("Avisos de datas/encerramento NAO bloqueiam a geracao", StringComparison.Ordinal)) return 28;
             if (!js.Contains("datesChanged:0", StringComparison.Ordinal)) return 29;
+            if (js.Contains("if(comp.level==='bad')throw", StringComparison.Ordinal)) return 30;
+            if (!js.Contains("genBtn.disabled=!dst||dst===state.parsed.src", StringComparison.Ordinal)) return 31;
 
             return 0;
         }
