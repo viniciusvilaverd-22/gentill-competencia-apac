@@ -39,10 +39,10 @@ jobs:
             -p:DebugSymbols=false `
             -o publish
 
-      - name: Self-test embedded v2.4.1 application
+      - name: Self-test embedded v2.4.2 application
         shell: pwsh
         run: |
-          $exe = Join-Path $PWD 'publish/Gentill_Competencia_APAC_v2.4.1.exe'
+          $exe = Join-Path $PWD 'publish/Gentill_Competencia_APAC_v2.4.2.exe'
           if (!(Test-Path $exe)) { throw "Executável não foi gerado: $exe" }
           $p = Start-Process -FilePath $exe -ArgumentList '--self-test' -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "Self-test falhou com código $($p.ExitCode)" }
@@ -51,23 +51,24 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force release | Out-Null
-          Copy-Item publish/Gentill_Competencia_APAC_v2.4.1.exe release/
-          $hash = (Get-FileHash release/Gentill_Competencia_APAC_v2.4.1.exe -Algorithm SHA256).Hash.ToLower()
-          "SHA-256  Gentill_Competencia_APAC_v2.4.1.exe`r`n$hash" | Set-Content release/SHA256.txt -Encoding utf8
+          Copy-Item publish/Gentill_Competencia_APAC_v2.4.2.exe release/
+          $hash = (Get-FileHash release/Gentill_Competencia_APAC_v2.4.2.exe -Algorithm SHA256).Hash.ToLower()
+          "SHA-256  Gentill_Competencia_APAC_v2.4.2.exe`r`n$hash" | Set-Content release/SHA256.txt -Encoding utf8
           @"
-          Gentill Competência APAC v2.4.1 — Conversão controlada
+          Gentill Competência APAC v2.4.2 — Conversão controlada
 
           Executável portátil para Windows x64.
           Não requer instalação do .NET.
 
-          CORREÇÃO v2.4.1:
-          - a competência do arquivo é mantida como origem ao carregar;
-          - nenhuma competência de destino é escolhida automaticamente;
-          - datas de encerramento são apenas lidas e exibidas como diagnóstico;
-          - o operador escolhe manualmente mês/ano de destino;
+          CORREÇÃO v2.4.2:
+          - divergências de data/encerramento são somente avisos;
+          - avisos 010082 não bloqueiam mais a geração do arquivo;
+          - datas em meses diferentes também geram somente aviso;
+          - competência de origem continua sendo lida diretamente do arquivo;
+          - destino continua sendo escolhido manualmente pelo operador;
+          - somente falhas estruturais ou de integridade bloqueiam a geração;
           - somente campos estruturais de competência são alterados;
-          - datas assistenciais permanecem byte a byte intactas;
-          - divergências com risco de 010082 são sinalizadas/bloqueadas antes da geração.
+          - datas assistenciais permanecem byte a byte intactas.
 
           Ferramenta independente — não oficial DATASUS/MV.
           by Gentill Mob Ops · www.gentillops.com.br
@@ -76,38 +77,38 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Gentill_Competencia_APAC_v2.4.1_Windows_x64
+          name: Gentill_Competencia_APAC_v2.4.2_Windows_x64
           path: release/*
           if-no-files-found: error
 
-      - name: Publish GitHub Release v2.4.1
+      - name: Publish GitHub Release v2.4.2
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $notes = @"
-          ## Gentill Competência APAC v2.4.1 — Conversão controlada
+          ## Gentill Competência APAC v2.4.2 — Conversão controlada
 
-          Correção da lógica de seleção de competência da v2.4.0.
+          Correção do bloqueio indevido por divergências de data.
 
           ### Correções
-          - remove seleção automática da competência baseada nas datas de encerramento;
-          - mantém a competência realmente gravada no arquivo como origem;
-          - encerramentos são exibidos somente para diagnóstico;
-          - mês e ano de destino são sempre escolhidos pelo operador;
+          - datas/encerramentos são somente diagnóstico;
+          - divergência com a competência de destino gera aviso, não bloqueio;
+          - datas em meses diferentes geram aviso, não bloqueio;
+          - possível crítica 010082 é informada ao operador, mas a geração permanece disponível;
+          - somente falhas estruturais/integridade bloqueiam a geração;
           - nenhuma data assistencial é criada, invertida ou reescrita;
-          - conversão continua restrita aos campos estruturais de competência;
-          - pré-validação 010082 permanece ativa.
+          - conversão permanece restrita aos campos estruturais de competência.
 
-          **A v2.4.1 substitui a v2.4.0 para uso operacional.**
+          **A v2.4.2 substitui a v2.4.1 para uso operacional.**
 
           **Ferramenta independente — não oficial DATASUS/MV.**
 
           by Gentill Mob Ops · www.gentillops.com.br
           "@
 
-          if (gh release view v2.4.1 2>$null) {
-            gh release upload v2.4.1 release/Gentill_Competencia_APAC_v2.4.1.exe release/SHA256.txt release/LEIA-ME.txt --clobber
+          if (gh release view v2.4.2 2>$null) {
+            gh release upload v2.4.2 release/Gentill_Competencia_APAC_v2.4.2.exe release/SHA256.txt release/LEIA-ME.txt --clobber
           } else {
-            gh release create v2.4.1 release/Gentill_Competencia_APAC_v2.4.1.exe release/SHA256.txt release/LEIA-ME.txt --target "${{ github.sha }}" --title "Gentill Competência APAC v2.4.1" --notes $notes
+            gh release create v2.4.2 release/Gentill_Competencia_APAC_v2.4.2.exe release/SHA256.txt release/LEIA-ME.txt --target "${{ github.sha }}" --title "Gentill Competência APAC v2.4.2" --notes $notes
           }
